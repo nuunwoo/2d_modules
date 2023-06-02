@@ -1,0 +1,193 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style type="text/css">
+      body {
+        display: flex;
+      }
+      canvas {
+        border: 1px solid black;
+      }
+      #buttonBox {
+        width: 400px;
+        height: 400px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+      }
+      #buttonBox > div {
+        width: calc(100% - 20px);
+        margin: 10px;
+      }
+      p {
+        width: calc(100% - 20px);
+        margin: 10px 10px 0 10px;
+      }
+    </style>
+  </head>
+  <body onload="draw();">
+    <div>
+      <canvas id="canvas" width="400" height="400"></canvas>
+      <div id="coordinates">coordinates: (0, 0)</div>
+      <br />
+      <div id="TL">TL: (150, 150)</div>
+      <div id="TR">TR: (250, 150)</div>
+      <div id="BR">BR: (250, 250)</div>
+      <div id="BL">BL: (150, 250)</div>
+    </div>
+    <div>
+      <div id="buttonBox">
+        <p>form: point1(x, y), point2(x, y)</p>
+        <div>
+          <label>선의 길이: 0</label>
+          <div>
+            <input id="lineLength" type="text" value="0, 0, 0, 0" /> <button onclick="lineLength();">push</button>
+          </div>
+        </div>
+        <p>form: drgree</p>
+        <div>
+          <label>사각형 각도전환</label>
+          <div><input id="rotate" type="text" value="10" /> <button onclick="rotate();">push</button></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const { sqrt, pow, round } = Math;
+      const rectPoint = [
+        { x: 150, y: 150 },
+        { x: 250, y: 150 },
+        { x: 250, y: 250 },
+        { x: 150, y: 250 },
+      ];
+      const canvas = document.getElementById("canvas");
+      const coordinates = document.getElementById("coordinates");
+
+      let x = 0;
+      let y = 0;
+      function draw() {
+        if (canvas.getContext) {
+          let ctx = canvas.getContext("2d");
+
+          for (let i = 0; i < rectPoint.length; i++) {
+            let n = i + 1;
+            if (i === rectPoint.length - 1) n = 0;
+            ctx.moveTo(rectPoint[i].x, rectPoint[i].y);
+            ctx.lineTo(rectPoint[n].x, rectPoint[n].y);
+            ctx.stroke();
+          }
+
+          //   ctx.font = "20px serif";
+          //   ctx.fillText("TL", rectPoint[0].x - 15, rectPoint[0].y - 10);
+          //   ctx.fillText("TR", rectPoint[1].x - 15, rectPoint[0].y - 10);
+          //   ctx.fillText("BR", rectPoint[2].x - 15, rectPoint[2].y + 20);
+          //   ctx.fillText("BL", rectPoint[3].x - 15, rectPoint[3].y + 20);
+        }
+      }
+
+      document.addEventListener("mousemove", (e) => {
+        if (e.target === document.getElementById("canvas")) {
+          x = e.offsetX;
+          y = e.offsetY;
+          coordinates.textContent = `coordinates: (${x}, ${y})`;
+        }
+      });
+
+      const lineLength = () => {
+        const input = document.getElementById("lineLength");
+        if (input.value !== "") {
+          const point1 = {
+            x: +input.value.replace(/[^0-9,]/g, "").split(",")[0],
+            y: +input.value.replace(/[^0-9,]/g, "").split(",")[1],
+          };
+          const point2 = {
+            x: +input.value.replace(/[^0-9,]/g, "").split(",")[2],
+            y: +input.value.replace(/[^0-9,]/g, "").split(",")[3],
+          };
+
+          let ctx = canvas.getContext("2d");
+          clear();
+          draw();
+          ctx.moveTo(point1.x, point1.y);
+          ctx.lineTo(point2.x, point2.y);
+          ctx.stroke();
+
+          const label = input.parentNode.parentNode.getElementsByTagName("label")[0];
+          label.textContent = `선의 길이: ${sqrt(pow(point2.x - point1.x, 2) + pow(point2.y - point1.y, 2))}`;
+        }
+      };
+
+      const rotate = () => {
+        let retData = {
+          rot: 0.0,
+          coords: [],
+        };
+        const input = document.getElementById("rotate");
+        const degree = Number(input.value);
+
+        let angle = (degree * Math.PI) / 180.0;
+
+        let centCoord = centeroidPolygon(rectPoint.map((el) => [el.x, el.y]));
+        for (let i = 0; i < rectPoint.length; i++) {
+          let coord = {
+            x:
+              Math.cos(angle) * (rectPoint[i].x - centCoord.x) -
+              Math.sin(angle) * (rectPoint[i].y - centCoord.y) +
+              centCoord.x,
+            y:
+              Math.sin(angle) * (rectPoint[i].x - centCoord.x) +
+              Math.cos(angle) * (rectPoint[i].y - centCoord.y) +
+              centCoord.y,
+          };
+
+          rectPoint[i] = coord;
+        }
+        document.getElementById("TL").textContent = `TL: (${round(rectPoint[0].x * 100) / 100}, ${round(rectPoint[0].y * 100) / 100})`;
+        document.getElementById("TR").textContent = `TR: (${round(rectPoint[1].x * 100) / 100}, ${round(rectPoint[1].y * 100) / 100})`;
+        document.getElementById("BR").textContent = `BR: (${round(rectPoint[2].x * 100) / 100}, ${round(rectPoint[2].y * 100) / 100})`;
+        document.getElementById("BL").textContent = `BL: (${round(rectPoint[3].x * 100) / 100}, ${round(rectPoint[3].y * 100) / 100})`;
+        let ctx = canvas.getContext("2d");
+        clear();
+        for (let i = 0; i < rectPoint.length; i++) {
+          let n = i + 1;
+          if (i === rectPoint.length - 1) n = 0;
+          ctx.moveTo(rectPoint[i].x, rectPoint[i].y);
+          ctx.lineTo(rectPoint[n].x, rectPoint[n].y);
+          ctx.stroke();
+        }
+      };
+
+      const centeroidPolygon = (points) => {
+        if (points.length > 2) {
+          var i, j, len, p1, p2, f, area, x, y;
+
+          area = x = y = 0;
+
+          for (i = 0, len = points.length, j = len - 1; i < len; j = i++) {
+            p1 = points[i];
+            p2 = points[j];
+
+            f = p1[0] * p2[1] - p2[0] * p1[1];
+            x += (p1[1] + p2[1]) * f;
+            y += (p1[0] + p2[0]) * f;
+            area += f * 3;
+          }
+
+          return { y: y / area, x: x / area };
+        }
+      };
+
+      const clear = () => {
+        let ctx = canvas.getContext("2d");
+        ctx.save();
+        ctx.globalCompositeOperation = "copy";
+        ctx.strokeStyle = "transparent";
+        ctx.beginPath();
+        ctx.lineTo(0, 0);
+        ctx.stroke();
+        ctx.restore();
+      };
+    </script>
+  </body>
+</html>
