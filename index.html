@@ -48,19 +48,25 @@
         <p>form: drgree</p>
         <div>
           <label>사각형 각도전환</label>
-          <div><input id="rotate" type="text" value="10" /> <button onclick="rotate();">push</button></div>
+          <div><input id="rotate" type="text" value="45" /> <button onclick="rotate();">push</button></div>
+        </div>
+        <p>form: sizeX, sizeY</p>
+        <div>
+          <label>사각형 스케일</label>
+          <div><input id="scale" type="text" value="10, 10" /> <button onclick="scale();">push</button></div>
         </div>
       </div>
     </div>
 
     <script>
-      const { sqrt, pow, round } = Math;
+      const { sqrt, pow, round, cos, sin, PI } = Math;
       const rectPoint = [
         { x: 150, y: 150 },
         { x: 250, y: 150 },
         { x: 250, y: 250 },
         { x: 150, y: 250 },
       ];
+      let rot = 0;
       const canvas = document.getElementById("canvas");
       const coordinates = document.getElementById("coordinates");
 
@@ -119,34 +125,37 @@
       };
 
       const rotate = () => {
-        let retData = {
-          rot: 0.0,
-          coords: [],
-        };
         const input = document.getElementById("rotate");
-        const degree = Number(input.value);
+        input.value = input.value.replace(/[^-0-9]/g, "");
+        input.value = input.value.replace(/[^0-9]$/g, "");
 
+        const degree = Number(input.value);
+        rot += degree;
+        if (rot >= 360) rot -= 360;
         let angle = (degree * Math.PI) / 180.0;
 
         let centCoord = centeroidPolygon(rectPoint.map((el) => [el.x, el.y]));
+        console.log(centCoord);
         for (let i = 0; i < rectPoint.length; i++) {
           let coord = {
-            x:
-              Math.cos(angle) * (rectPoint[i].x - centCoord.x) -
-              Math.sin(angle) * (rectPoint[i].y - centCoord.y) +
-              centCoord.x,
-            y:
-              Math.sin(angle) * (rectPoint[i].x - centCoord.x) +
-              Math.cos(angle) * (rectPoint[i].y - centCoord.y) +
-              centCoord.y,
+            x: cos(angle) * (rectPoint[i].x - centCoord.x) - sin(angle) * (rectPoint[i].y - centCoord.y) + centCoord.x,
+            y: sin(angle) * (rectPoint[i].x - centCoord.x) + cos(angle) * (rectPoint[i].y - centCoord.y) + centCoord.y,
           };
 
           rectPoint[i] = coord;
         }
-        document.getElementById("TL").textContent = `TL: (${round(rectPoint[0].x * 100) / 100}, ${round(rectPoint[0].y * 100) / 100})`;
-        document.getElementById("TR").textContent = `TR: (${round(rectPoint[1].x * 100) / 100}, ${round(rectPoint[1].y * 100) / 100})`;
-        document.getElementById("BR").textContent = `BR: (${round(rectPoint[2].x * 100) / 100}, ${round(rectPoint[2].y * 100) / 100})`;
-        document.getElementById("BL").textContent = `BL: (${round(rectPoint[3].x * 100) / 100}, ${round(rectPoint[3].y * 100) / 100})`;
+        document.getElementById("TL").textContent = `TL: (${round(rectPoint[0].x * 100) / 100}, ${
+          round(rectPoint[0].y * 100) / 100
+        })`;
+        document.getElementById("TR").textContent = `TR: (${round(rectPoint[1].x * 100) / 100}, ${
+          round(rectPoint[1].y * 100) / 100
+        })`;
+        document.getElementById("BR").textContent = `BR: (${round(rectPoint[2].x * 100) / 100}, ${
+          round(rectPoint[2].y * 100) / 100
+        })`;
+        document.getElementById("BL").textContent = `BL: (${round(rectPoint[3].x * 100) / 100}, ${
+          round(rectPoint[3].y * 100) / 100
+        })`;
         let ctx = canvas.getContext("2d");
         clear();
         for (let i = 0; i < rectPoint.length; i++) {
@@ -158,6 +167,71 @@
         }
       };
 
+      const scale = () => {
+        const input = document.getElementById("scale");
+        if (input.value !== "") {
+          let angle = 0;
+          if (rot < 0) {
+            angle = (-rot * Math.PI) / 180.0;
+          } else {
+            angle = (rot * Math.PI) / 180.0;
+          }
+          input.value.replace(/[^-0-9, ]/g, "").split(",");
+          let value = input.value.replace(/[^-0-9,]/g, "").split(",");
+          value[1] = " " + value[1];
+          input.value = value;
+
+          const size = {
+            x: Number(value[0]),
+            y: Number(value[1]),
+          };
+
+          const cos = Math.cos(angle);
+          const sin = Math.sin(angle);
+
+          for (let i = 0; i < rectPoint.length; i++) {
+            if (i === 0) {
+              rectPoint[i].x -= size.x * cos - size.y * sin;
+              rectPoint[i].y -= size.x * sin + size.y * cos;
+            }
+            if (i === 1) {
+              rectPoint[i].x -= -size.x * cos - size.y * sin;
+              rectPoint[i].y -= -size.x * sin + size.y * cos;
+            }
+            if (i === 2) {
+              rectPoint[i].x -= -size.x * cos - -size.y * sin;
+              rectPoint[i].y -= -size.x * sin + -size.y * cos;
+            }
+            if (i === 3) {
+              rectPoint[i].x -= size.x * cos - -size.y * sin;
+              rectPoint[i].y -= size.x * sin + -size.y * cos;
+            }
+          }
+
+          document.getElementById("TL").textContent = `TL: (${round(rectPoint[0].x * 100) / 100}, ${
+            round(rectPoint[0].y * 100) / 100
+          })`;
+          document.getElementById("TR").textContent = `TR: (${round(rectPoint[1].x * 100) / 100}, ${
+            round(rectPoint[1].y * 100) / 100
+          })`;
+          document.getElementById("BR").textContent = `BR: (${round(rectPoint[2].x * 100) / 100}, ${
+            round(rectPoint[2].y * 100) / 100
+          })`;
+          document.getElementById("BL").textContent = `BL: (${round(rectPoint[3].x * 100) / 100}, ${
+            round(rectPoint[3].y * 100) / 100
+          })`;
+
+          let ctx = canvas.getContext("2d");
+          clear();
+          for (let i = 0; i < rectPoint.length; i++) {
+            let n = i + 1;
+            if (i === rectPoint.length - 1) n = 0;
+            ctx.moveTo(rectPoint[i].x, rectPoint[i].y);
+            ctx.lineTo(rectPoint[n].x, rectPoint[n].y);
+            ctx.stroke();
+          }
+        }
+      };
       const centeroidPolygon = (points) => {
         if (points.length > 2) {
           var i, j, len, p1, p2, f, area, x, y;
@@ -176,6 +250,19 @@
 
           return { y: y / area, x: x / area };
         }
+      };
+
+      const calcInclinY = (inclin, x) => {
+        return inclin.a * x + inclin.b;
+      };
+      const calcInclinGeo = (geo1, geo2) => {
+        const va = (geo1[1] - geo2[1]) / (geo1[0] - geo2[0]);
+        const vb = geo1[1] - va * geo1[0];
+
+        return {
+          a: va,
+          b: vb,
+        };
       };
 
       const clear = () => {
